@@ -275,7 +275,7 @@ public struct SearchView: View {
             
             FlowLayout(items: filterYearsList) { yearStr in
                 let isSelected = (yearStr == "Любой" && selectedYear == nil) || (selectedYear == Int(yearStr))
-                Button(action: {
+                return Button(action: {
                     if yearStr == "Любой" {
                         selectedYear = nil
                     } else {
