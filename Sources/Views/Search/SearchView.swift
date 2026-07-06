@@ -1,6 +1,7 @@
 import SwiftUI
 
 /// Экран поиска фильмов и сериалов Киного с детальной фильтрацией
+@MainActor
 public struct SearchView: View {
     @StateObject private var service = MovieService()
     @State private var searchText: String = ""
@@ -26,6 +27,11 @@ public struct SearchView: View {
     private var yearsList: [Int] {
         let years = service.movies.map { $0.year }
         return Array(Set(years)).sorted(by: >)
+    }
+    
+    // Список лет с опцией "Любой" для разгрузки компилятора
+    private var filterYearsList: [String] {
+        ["Любой"] + yearsList.map { String($0) }
     }
     
     public var body: some View {
@@ -214,7 +220,7 @@ public struct SearchView: View {
         .cornerRadius(6)
     }
     
-    // MARK: - Filter Sheet View & Subcomponents (Разбиваем для ускорения type-check)
+    // MARK: - Filter Sheet View & Subcomponents
     
     @ViewBuilder
     private func typeFilterSection() -> some View {
@@ -267,7 +273,7 @@ public struct SearchView: View {
                 .font(.system(size: 16, weight: .bold))
                 .foregroundColor(.white)
             
-            FlowLayout(items: ["Любой"] + yearsList.map { String($0) }) { yearStr in
+            FlowLayout(items: filterYearsList) { yearStr in
                 let isSelected = (yearStr == "Любой" && selectedYear == nil) || (selectedYear == Int(yearStr))
                 Button(action: {
                     if yearStr == "Любой" {
