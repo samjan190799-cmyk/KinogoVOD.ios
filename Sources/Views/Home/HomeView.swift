@@ -1,20 +1,25 @@
 import SwiftUI
 
-// Главный экран приложения (Стиль 2026: просторные отступы, тонкие границы, спокойная палитра)
+/// Главный экран каталога Киного с неоновым дизайном и категориями
 public struct HomeView: View {
     @StateObject private var service = MovieService()
-    @State private var searchQuery = ""
-    @State private var selectedGenre: String? = nil
+    @State private var selectedCategory: String = "Все" // Все, Фильмы, Сериалы
+    @State private var selectedGenre: String = "Все"
     
-    // Список доступных жанров для фильтрации
-    private let genresList = ["Все", "Фантастика", "Приключения", "Драма", "Биография", "История"]
+    private let categories = ["Все", "Фильмы", "Сериалы"]
+    
+    // Жанры, выгруженные из базы данных
+    private var genresList: [String] {
+        var genres = ["Все"]
+        let allGenres = service.movies.flatMap { $0.genres }
+        genres.append(contentsOf: allGenres.unique())
+        return genres
+    }
     
     public init() {
-        // Настройка внешнего вида UINavigationBar для корректного отображения в темном стиле
+        // Прозрачная плашка навигации для красивого наложения баннера
         let appearance = UINavigationBarAppearance()
         appearance.configureWithTransparentBackground()
-        appearance.titleTextAttributes = [.foregroundColor: UIColor(Theme.Colors.primaryText)]
-        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor(Theme.Colors.primaryText)]
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance
     }
@@ -25,123 +30,149 @@ public struct HomeView: View {
                 Theme.Colors.background
                     .ignoresSafeArea()
                 
+                // Легкое неоновое оранжевое свечение на фоне (Ambient Light)
+                RadialGradient(
+                    colors: [Theme.Colors.accent.opacity(0.12), .clear],
+                    center: .topLeading,
+                    startRadius: 0,
+                    endRadius: 400
+                )
+                .ignoresSafeArea()
+                
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 28) {
                         
-                        // Заголовок и Профиль
+                        // 1. Верхний Логотип и Профиль
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Кинозал")
-                                    .font(.system(size: 28, weight: .semibold))
-                                    .foregroundColor(Theme.Colors.primaryText)
-                                Text("Спокойный просмотр кино")
-                                    .font(.system(size: 14, weight: .light))
-                                    .foregroundColor(Theme.Colors.secondaryText)
+                                HStack(spacing: 4) {
+                                    Text("КИНО")
+                                        .font(.system(size: 24, weight: .black))
+                                        .foregroundColor(.white)
+                                    Text("ГО")
+                                        .font(.system(size: 24, weight: .black))
+                                        .foregroundColor(.black)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Theme.Colors.accent)
+                                        .cornerRadius(6)
+                                        .shadow(color: Theme.Colors.accent.opacity(0.5), radius: 8)
+                                }
+                                
+                                Text("Смотрите новинки с samkino.kinogo.luxury")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(Theme.Colors.textSecondary)
                             }
+                            
                             Spacer()
                             
-                            // Минималистичная иконка профиля с тонкой гранью
-                            Image(systemName: "person.crop.circle")
-                                .font(.system(size: 28, weight: .light))
-                                .foregroundColor(Theme.Colors.accent)
-                                .padding(8)
+                            // Кнопка профиля с неоновой рамкой
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(.white)
+                                .padding(12)
                                 .background(Theme.Colors.surface)
                                 .clipShape(Circle())
-                                .modifier(FineBorderModifier())
+                                .neonGlowBorder(radius: 20, isGlowing: false)
                         }
                         .padding(.horizontal, 20)
                         .padding(.top, 12)
                         
-                        // Строка поиска (Стиль 2026: без теней, с тонкой рамкой, сливается с фоном)
-                        HStack {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundColor(Theme.Colors.secondaryText)
-                                .font(.system(size: 16, weight: .light))
-                            
-                            TextField("Поиск фильмов, режиссеров...", text: $searchQuery)
-                                .foregroundColor(Theme.Colors.primaryText)
-                                .font(.system(size: 15, weight: .light))
-                                .tint(Theme.Colors.accent)
-                            
-                            if !searchQuery.isEmpty {
-                                Button(action: { searchQuery = "" }) {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(Theme.Colors.secondaryText)
+                        // 2. Селектор Категорий (Табы в стиле Glassmorphism)
+                        HStack(spacing: 8) {
+                            ForEach(categories, id: \.self) { cat in
+                                Button(action: {
+                                    withAnimation(Theme.Animations.interactiveSpring) {
+                                        selectedCategory = cat
+                                    }
+                                }) {
+                                    Text(cat)
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(selectedCategory == cat ? .black : .white)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 10)
+                                        .background(selectedCategory == cat ? Theme.Colors.accent : Theme.Colors.surface)
+                                        .cornerRadius(10)
+                                        .neonGlowBorder(radius: 10, isGlowing: selectedCategory == cat)
                                 }
                             }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(Theme.Colors.surface)
-                        .cornerRadius(Theme.Radius.card)
-                        .modifier(FineBorderModifier())
                         .padding(.horizontal, 20)
                         
-                        // Если идет поиск, показываем результаты
-                        if !searchQuery.isEmpty {
-                            SearchResultsView(movies: service.searchMovies(query: searchQuery))
-                        } else {
-                            // Рекомендуемый фильм (Hero Section)
-                            if let featuredMovie = service.movies.first(where: { $0.isFeatured }) {
-                                NavigationLink(value: featuredMovie) {
-                                    HeroBannerView(movie: featuredMovie)
+                        // 3. Большой Промо-Баннер (Featured Movie)
+                        if let featured = service.movies.first(where: { $0.isFeatured }) {
+                            NavigationLink(value: featured) {
+                                HeroBannerView(movie: featured)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .padding(.horizontal, 20)
+                        }
+                        
+                        // 4. Селектор Жанров (Горизонтальные теги)
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Жанры")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 20)
+                            
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 10) {
+                                    ForEach(genresList, id: \.self) { genre in
+                                        Button(action: {
+                                            withAnimation(Theme.Animations.interactiveSpring) {
+                                                selectedGenre = genre
+                                            }
+                                        }) {
+                                            Text(genre)
+                                                .font(.system(size: 13, weight: .medium))
+                                                .foregroundColor(selectedGenre == genre ? Theme.Colors.accent : Theme.Colors.textSecondary)
+                                                .padding(.horizontal, 16)
+                                                .padding(.vertical, 8)
+                                                .background(Theme.Colors.surface)
+                                                .cornerRadius(20)
+                                                .overlay(
+                                                    RoundedRectangle(cornerRadius: 20)
+                                                        .stroke(selectedGenre == genre ? Theme.Colors.accent : Theme.Colors.border, lineWidth: 1.2)
+                                                )
+                                        }
+                                    }
                                 }
-                                .buttonStyle(PlainButtonStyle())
                                 .padding(.horizontal, 20)
                             }
-                            
-                            // Карусель жанров (Селекторы)
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Категории")
-                                    .font(.system(size: 18, weight: .medium))
-                                    .foregroundColor(Theme.Colors.primaryText)
-                                    .padding(.horizontal, 20)
-                                
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 10) {
-                                        ForEach(genresList, id: \.self) { genre in
-                                            GenreTag(
-                                                title: genre,
-                                                isSelected: (selectedGenre == nil && genre == "Все") || selectedGenre == genre,
-                                                action: {
-                                                    withAnimation(Theme.Animations.swiftTransition) {
-                                                        if genre == "Все" {
-                                                            selectedGenre = nil
-                                                        } else {
-                                                            selectedGenre = genre
-                                                        }
-                                                    }
-                                                }
-                                            )
-                                        }
-                                    }
-                                    .padding(.horizontal, 20)
-                                }
-                            }
-                            
-                            // Фильтрованный список или Новинки
-                            let filteredMovies = getFilteredMovies()
-                            
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text(selectedGenre == nil ? "Рекомендуем посмотреть" : "В жанре \(selectedGenre!)")
-                                    .font(.system(size: 18, weight: .medium))
-                                    .foregroundColor(Theme.Colors.primaryText)
-                                    .padding(.horizontal, 20)
-                                
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 16) {
-                                        ForEach(filteredMovies) { movie in
-                                            NavigationLink(value: movie) {
-                                                MovieCardView(movie: movie)
-                                            }
-                                            .buttonStyle(PlainButtonStyle())
-                                        }
-                                    }
-                                    .padding(.horizontal, 20)
-                                }
-                            }
-                            .padding(.bottom, 24)
                         }
+                        
+                        // 5. Разделы с фильмами (Карусели)
+                        VStack(spacing: 28) {
+                            let filtered = getFilteredMovies()
+                            
+                            if filtered.isEmpty {
+                                VStack {
+                                    Image(systemName: "film")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(Theme.Colors.textSecondary)
+                                        .padding(.bottom, 8)
+                                    Text("Нет подходящего контента")
+                                        .foregroundColor(Theme.Colors.textSecondary)
+                                }
+                                .frame(maxWidth: .infinity, minHeight: 200)
+                            } else {
+                                // А) Горячие Новинки (2024-2026)
+                                let newMovies = filtered.filter { $0.year >= 2024 }
+                                if !newMovies.isEmpty {
+                                    movieCarousel(title: "Горячие новинки", movies: newMovies)
+                                }
+                                
+                                // Б) Лучшие по рейтингу
+                                let topRated = filtered.sorted(by: { $0.ratingKp > $1.ratingKp })
+                                if !topRated.isEmpty {
+                                    movieCarousel(title: "Высокий рейтинг", movies: topRated)
+                                }
+                                
+                                // В) Все отфильтрованные фильмы
+                                movieCarousel(title: "Рекомендуем", movies: filtered)
+                            }
+                        }
+                        .padding(.bottom, 40)
                     }
                 }
             }
@@ -151,210 +182,172 @@ public struct HomeView: View {
         }
     }
     
+    // MARK: - Helper Logic & Views
+    
     private func getFilteredMovies() -> [Movie] {
-        guard let genre = selectedGenre else { return service.movies }
-        return service.movies.filter { $0.genres.contains(genre) }
+        var result = service.movies
+        
+        // Фильтр по категории
+        if selectedCategory == "Фильмы" {
+            result = result.filter { !$0.isSeries }
+        } else if selectedCategory == "Сериалы" {
+            result = result.filter { $0.isSeries }
+        }
+        
+        // Фильтр по жанру
+        if selectedGenre != "Все" {
+            result = result.filter { $0.genres.contains(selectedGenre) }
+        }
+        
+        return result
+    }
+    
+    @ViewBuilder
+    private func movieCarousel(title: String, movies: [Movie]) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(title)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(movies) { movie in
+                        NavigationLink(value: movie) {
+                            MovieCardView(movie: movie)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .padding(.horizontal, 20)
+            }
+        }
     }
 }
 
-// Большой баннер для рекомендуемого фильма дня
+// MARK: - Subviews
+
 struct HeroBannerView: View {
     let movie: Movie
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            ZStack(alignment: .bottomLeading) {
-                AsyncImage(url: URL(string: movie.posterURL)) { phase in
-                    if let image = phase.image {
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(height: 220)
-                            .clipped()
-                    } else {
-                        Rectangle()
-                            .fill(Theme.Colors.surface)
-                            .frame(height: 220)
-                            .overlay(ProgressView().tint(Theme.Colors.accent))
-                    }
+        ZStack(alignment: .bottomLeading) {
+            // Изображение баннера
+            AsyncImage(url: URL(string: movie.bannerURL)) { phase in
+                if let image = phase.image {
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 220)
+                        .clipped()
+                } else {
+                    Rectangle()
+                        .fill(Theme.Colors.surface)
+                        .frame(height: 220)
+                        .overlay(ProgressView().tint(Theme.Colors.accent))
                 }
-                
-                // Затемнение низа баннера
-                LinearGradient(
-                    gradient: Gradient(colors: [.clear, Color.black.opacity(0.85)]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 120)
-                
-                // Текст поверх баннера
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("В центре внимания")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(Theme.Colors.accent)
+            }
+            
+            // Затемнение
+            LinearGradient(
+                colors: [.clear, Color.black.opacity(0.9)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            
+            // Детали поверх баннера
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("В тренде")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.black)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Theme.Colors.surface.opacity(0.8))
+                        .background(Theme.Colors.accent)
                         .cornerRadius(4)
-                        .modifier(FineBorderModifier())
+                        .shadow(color: Theme.Colors.accent.opacity(0.4), radius: 4)
                     
-                    Text(movie.title)
-                        .font(.system(size: 22, weight: .semibold))
-                        .foregroundColor(.white)
+                    Spacer()
                     
-                    Text(movie.genres.joined(separator: ", "))
-                        .font(.system(size: 12, weight: .light))
-                        .foregroundColor(.white.opacity(0.7))
+                    HStack(spacing: 3) {
+                        Image(systemName: "star.fill")
+                            .foregroundColor(Theme.Colors.ratingHigh)
+                            .font(.system(size: 10))
+                        Text(String(format: "%.1f", movie.ratingKp))
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(4)
                 }
-                .padding(16)
+                
+                Text(movie.title)
+                    .font(.system(size: 22, weight: .black))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                
+                Text(movie.genres.joined(separator: ", ") + " • " + String(movie.year))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(Theme.Colors.textSecondary)
+                    .lineLimit(1)
             }
+            .padding(16)
         }
-        .cornerRadius(Theme.Radius.large)
-        .modifier(FineBorderModifier())
+        .frame(height: 220)
+        .cornerRadius(Theme.Radius.card)
+        .neonGlowBorder(radius: Theme.Radius.card, isGlowing: true)
     }
 }
 
-// Карточка фильма в карусели
 struct MovieCardView: View {
     let movie: Movie
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            AsyncImage(url: URL(string: movie.posterURL)) { phase in
-                if let image = phase.image {
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 140, height: 210)
-                        .cornerRadius(Theme.Radius.card)
-                } else {
-                    RoundedRectangle(cornerRadius: Theme.Radius.card)
-                        .fill(Theme.Colors.surface)
-                        .frame(width: 140, height: 210)
-                        .overlay(ProgressView().tint(Theme.Colors.accent))
+            ZStack(alignment: .topTrailing) {
+                // Постер
+                AsyncImage(url: URL(string: movie.posterURL)) { phase in
+                    if let image = phase.image {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 135, height: 195)
+                            .cornerRadius(Theme.Radius.card)
+                    } else {
+                        RoundedRectangle(cornerRadius: Theme.Radius.card)
+                            .fill(Theme.Colors.surface)
+                            .frame(width: 135, height: 195)
+                            .overlay(ProgressView().tint(Theme.Colors.accent))
+                    }
                 }
+                
+                // Плашка рейтинга Кинопоиска в верхнем углу
+                Text(String(format: "%.1f", movie.ratingKp))
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(movie.ratingKp >= 8.0 ? Theme.Colors.ratingHigh : Theme.Colors.ratingMedium)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+                    .background(.ultraThinMaterial)
+                    .cornerRadius(6)
+                    .padding(8)
             }
-            .modifier(FineBorderModifier())
+            .neonGlowBorder(radius: Theme.Radius.card, isGlowing: false)
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(movie.title)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(Theme.Colors.primaryText)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(Theme.Colors.textPrimary)
                     .lineLimit(1)
                 
-                HStack(spacing: 12) {
-                    Text(String(movie.year))
-                        .font(.system(size: 12, weight: .light))
-                        .foregroundColor(Theme.Colors.secondaryText)
-                    
-                    HStack(spacing: 2) {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(Theme.Colors.accent)
-                        Text(String(format: "%.1f", movie.rating))
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(Theme.Colors.primaryText)
-                    }
-                }
+                Text("\(String(movie.year)) • \(movie.isSeries ? "Сериал" : "Фильм")")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(Theme.Colors.textSecondary)
+                    .lineLimit(1)
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 2)
         }
-        .frame(width: 140)
-    }
-}
-
-// Тег жанра для фильтрации
-struct GenreTag: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 14, weight: isSelected ? .medium : .light))
-                .foregroundColor(isSelected ? Theme.Colors.background : Theme.Colors.primaryText)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(isSelected ? Theme.Colors.accent : Theme.Colors.surface)
-                .cornerRadius(Theme.Radius.button)
-                .modifier(FineBorderModifier())
-        }
-        .buttonStyle(ScaleButtonStyle())
-    }
-}
-
-// Результаты поиска
-struct SearchResultsView: View {
-    let movies: [Movie]
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Результаты поиска")
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(Theme.Colors.primaryText)
-                .padding(.horizontal, 20)
-            
-            if movies.isEmpty {
-                Text("Ничего не найдено")
-                    .font(.system(size: 14, weight: .light))
-                    .foregroundColor(Theme.Colors.secondaryText)
-                    .padding(.horizontal, 20)
-            } else {
-                LazyVStack(spacing: 14) {
-                    ForEach(movies) { movie in
-                        NavigationLink(value: movie) {
-                            HStack(spacing: 16) {
-                                AsyncImage(url: URL(string: movie.posterURL)) { phase in
-                                    if let image = phase.image {
-                                        image
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: 60, height: 90)
-                                            .cornerRadius(Theme.Radius.card)
-                                    } else {
-                                        RoundedRectangle(cornerRadius: Theme.Radius.card)
-                                            .fill(Theme.Colors.surface)
-                                            .frame(width: 60, height: 90)
-                                    }
-                                }
-                                .modifier(FineBorderModifier())
-                                
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text(movie.title)
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(Theme.Colors.primaryText)
-                                    
-                                    Text("\(movie.genres.joined(separator: ", ")) • \(movie.year)")
-                                        .font(.system(size: 13, weight: .light))
-                                        .foregroundColor(Theme.Colors.secondaryText)
-                                    
-                                    HStack(spacing: 2) {
-                                        Image(systemName: "star.fill")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(Theme.Colors.accent)
-                                        Text(String(format: "%.1f", movie.rating))
-                                            .font(.system(size: 13, weight: .medium))
-                                            .foregroundColor(Theme.Colors.primaryText)
-                                    }
-                                }
-                                Spacer()
-                                
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 14, weight: .light))
-                                    .foregroundColor(Theme.Colors.secondaryText)
-                            }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
-                            .background(Theme.Colors.surface.opacity(0.4))
-                            .cornerRadius(Theme.Radius.card)
-                            .modifier(FineBorderModifier())
-                            .padding(.horizontal, 20)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                }
-            }
-        }
+        .frame(width: 135)
     }
 }

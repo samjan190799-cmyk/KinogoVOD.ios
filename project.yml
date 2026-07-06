@@ -1,8 +1,8 @@
-name: KinogoVOD
+name: Kinogo
 options:
-  bundleIdPrefix: com.samvel.kinogovod
+  bundleIdPrefix: com.samvel.kinogo
 targets:
-  KinogoVOD:
+  Kinogo:
     type: application
     platform: iOS
     deploymentTarget: "16.0"
@@ -11,13 +11,13 @@ targets:
     info:
       path: Sources/Info.plist
       properties:
-        CFBundleName: KinogoVOD
-        CFBundleDisplayName: Kinogo VOD
-        CFBundleIdentifier: com.samvel.kinogovod.KinogoVOD
+        CFBundleName: Kinogo
+        CFBundleDisplayName: Киного
+        CFBundleIdentifier: com.samvel.kinogo.Kinogo
         CFBundleVersion: "1"
         CFBundleShortVersionString: "1.0"
         CFBundlePackageType: APPL
-        CFBundleExecutable: KinogoVOD
+        CFBundleExecutable: Kinogo
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -26,7 +26,7 @@ targets:
     settings:
       base:
         SWIFT_VERSION: "5.9"
-        PRODUCT_NAME: KinogoVOD
+        PRODUCT_NAME: Kinogo
         DEVELOPMENT_TEAM: ""
         CODE_SIGN_IDENTITY: ""
         CODE_SIGNING_REQUIRED: "NO"

@@ -1,4 +1,4 @@
-name: Build KinogoVOD iOS IPA
+name: Build Kinogo iOS IPA
 
 on:
   push:
@@ -50,8 +50,8 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild \
-            -project KinogoVOD.xcodeproj \
-            -scheme KinogoVOD \
+            -project Kinogo.xcodeproj \
+            -scheme Kinogo \
             -destination 'generic/platform=iOS' \
             -configuration Release \
             -derivedDataPath build \
@@ -64,23 +64,23 @@ jobs:
             build 2>&1 | xcpretty
 
           # Verify .app executable was built
-          ls -l build/Build/Products/Release-iphoneos/KinogoVOD.app/KinogoVOD
+          ls -l build/Build/Products/Release-iphoneos/Kinogo.app/Kinogo
 
       - name: Package as IPA
         run: |
           mkdir -p build/Payload
           APP_PATH=$(find build/Build/Products/Release-iphoneos -name "*.app" | head -1)
           echo "App path: $APP_PATH"
-          cp -r "$APP_PATH" build/Payload/KinogoVOD.app
+          cp -r "$APP_PATH" build/Payload/Kinogo.app
           cd build
-          zip -r KinogoVOD.ipa Payload/
-          echo "IPA size: $(du -h KinogoVOD.ipa | cut -f1)"
+          zip -r Kinogo.ipa Payload/
+          echo "IPA size: $(du -h Kinogo.ipa | cut -f1)"
 
       - name: Upload IPA as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: KinogoVOD-Unsigned-IPA
-          path: build/KinogoVOD.ipa
+          name: Kinogo-Unsigned-IPA
+          path: build/Kinogo.ipa
           if-no-files-found: error
           retention-days: 30
 
@@ -89,15 +89,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: "Kinogo VOD v1.0 (Build ${{ github.run_number }})"
+          name: "Киного v1.0 (Build ${{ github.run_number }})"
           body: |
-            ## Kinogo VOD iOS IPA (Aesthetic 2026)
+            ## Киного iOS IPA (Aesthetic 2026)
 
             **Как установить через AltStore:**
-            1. Скачай `KinogoVOD.ipa` ниже
+            1. Скачай `Kinogo.ipa` ниже
             2. Открой AltStore на iPhone → "My Apps" → "+" → выбери IPA
             3. Готово!
-          files: build/KinogoVOD.ipa
+          files: build/Kinogo.ipa
           draft: false
           prerelease: false
         env:

@@ -1,56 +1,122 @@
 import SwiftUI
 
-// Дизайн-система Theme для KinogoVOD (Стиль 2026: спокойный минимализм, теплые тона, обилие пространства)
+/// Дизайн-система приложения Киного (Стиль: Premium Neon Glassmorphism)
 public enum Theme {
     
-    // Цветовая палитра
     public enum Colors {
-        // Основной фон - мягкий глубокий угольный цвет (Warm Charcoal)
-        public static let background = Color(red: 0.08, green: 0.08, blue: 0.09)
+        /// Глубокий черный фон кинозала
+        public static let background = Color(red: 0.03, green: 0.03, blue: 0.04)
         
-        // Вторичный фон для карточек и панелей - теплый темно-серый (Warm Slate)
-        public static let surface = Color(red: 0.13, green: 0.13, blue: 0.14)
+        /// Темно-серая поверхность для карточек и панелей
+        public static let surface = Color(red: 0.08, green: 0.08, blue: 0.10)
         
-        // Основной текст - нежный цвет шампанского / песочный (Champagne / Sand)
-        public static let primaryText = Color(red: 0.95, green: 0.92, blue: 0.88)
+        /// Светлая поверхность для контрастных элементов
+        public static let surfaceSecondary = Color(red: 0.14, green: 0.14, blue: 0.17)
         
-        // Вторичный текст - приглушенный теплый серый
-        public static let secondaryText = Color(red: 0.60, green: 0.58, blue: 0.56)
+        /// Основной фирменный неоново-оранжевый акцент
+        public static let accent = Color(red: 1.00, green: 0.42, blue: 0.00) // #FF6C00
         
-        // Цвет тонких разделителей и границ (Fine Border) - очень мягкий серый
-        public static let border = Color(red: 0.22, green: 0.21, blue: 0.20)
+        /// Градиент для кнопок воспроизведения
+        public static let accentGradient = Gradient(colors: [
+            Color(red: 1.00, green: 0.42, blue: 0.00), // Оранжевый
+            Color(red: 1.00, green: 0.23, blue: 0.19)  // Красный
+        ])
         
-        // Акцентный цвет для кнопок воспроизведения и активных элементов (приглушенный оливково-золотой / мускатный)
-        public static let accent = Color(red: 0.82, green: 0.74, blue: 0.65)
+        /// Яркий зеленый цвет для высоких рейтингов
+        public static let ratingHigh = Color(red: 0.00, green: 0.90, blue: 0.46) // #00E676
+        
+        /// Желтый цвет для средних рейтингов
+        public static let ratingMedium = Color(red: 1.00, green: 0.80, blue: 0.00) // #FFCC00
+        
+        /// Серый цвет для низких рейтингов
+        public static let ratingLow = Color(red: 0.60, green: 0.60, blue: 0.60)
+        
+        /// Основной белый текст
+        public static let textPrimary = Color.white
+        
+        /// Вторичный приглушенный серый текст
+        public static let textSecondary = Color(red: 0.55, green: 0.55, blue: 0.60) // #8E8E93
+        
+        /// Цвет границ по умолчанию
+        public static let border = Color(red: 0.18, green: 0.18, blue: 0.22)
+        
+        /// Цвет неоновой светящейся границы
+        public static let neonBorder = Color(red: 1.00, green: 0.42, blue: 0.00, opacity: 0.3)
     }
     
-    // Настройки скруглений углов
     public enum Radius {
-        public static let small: CGFloat = 6
-        public static let card: CGFloat = 12
-        public static let button: CGFloat = 20
-        public static let large: CGFloat = 24
+        public static let small: CGFloat = 8
+        public static let card: CGFloat = 16
+        public static let button: CGFloat = 14
+        public static let large: CGFloat = 28
     }
     
-    // Конфигурации анимаций (плавные и незаметные в духе 2026 года)
     public enum Animations {
-        public static let swiftTransition = Animation.spring(response: 0.4, dampingFraction: 0.85, blendDuration: 0)
-        public static let slowFade = Animation.easeInOut(duration: 0.3)
-    }
-    
-    // Тонкие рамки для карточек и кнопок
-    public static func fineBorder() -> some ViewModifier {
-        FineBorderModifier()
+        /// Динамичная пружинная анимация для интерактивных элементов
+        public static let interactiveSpring = Animation.spring(response: 0.35, dampingFraction: 0.75, blendDuration: 0)
+        
+        /// Плавное растворение для переходов
+        public static let smoothFade = Animation.easeInOut(duration: 0.25)
     }
 }
 
-// Модификатор для создания ультратонких спокойных рамок
-struct FineBorderModifier: ViewModifier {
-    func body(content: Content) -> some View {
+// MARK: - View Modifiers
+
+public struct GlassmorphicModifier: ViewModifier {
+    var cornerRadius: CGFloat
+    
+    public func body(content: Content) -> some View {
+        content
+            .background(.ultraThinMaterial)
+            .cornerRadius(cornerRadius)
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.15),
+                                Color.clear,
+                                Theme.Colors.accent.opacity(0.15)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
+    }
+}
+
+public struct NeonGlowBorderModifier: ViewModifier {
+    var cornerRadius: CGFloat
+    var isGlowing: Bool
+    
+    public func body(content: Content) -> some View {
         content
             .overlay(
-                RoundedRectangle(cornerRadius: Theme.Radius.card)
-                    .stroke(Theme.Colors.border, lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(
+                        isGlowing ? Theme.Colors.accent.opacity(0.6) : Theme.Colors.border,
+                        lineWidth: isGlowing ? 1.5 : 1.0
+                    )
+                    .shadow(
+                        color: isGlowing ? Theme.Colors.accent.opacity(0.4) : Color.clear,
+                        radius: isGlowing ? 8 : 0,
+                        x: 0,
+                        y: 0
+                    )
             )
+    }
+}
+
+public extension View {
+    /// Применяет эффект Glassmorphism с размытием заднего плана и тонкой полупрозрачной границей
+    func glassBackground(radius: CGFloat = Theme.Radius.card) -> some View {
+        self.modifier(GlassmorphicModifier(cornerRadius: radius))
+    }
+    
+    /// Применяет тонкую неоновую светящуюся рамку
+    func neonGlowBorder(radius: CGFloat = Theme.Radius.card, isGlowing: Bool = false) -> some View {
+        self.modifier(NeonGlowBorderModifier(cornerRadius: radius, isGlowing: isGlowing))
     }
 }
