@@ -120,3 +120,13 @@ public extension View {
         self.modifier(NeonGlowBorderModifier(cornerRadius: radius, isGlowing: isGlowing))
     }
 }
+
+/// Элегантная пружинная анимация для кнопок при нажатии
+public struct ScaleButtonStyle: ButtonStyle {
+    public init() {}
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(Theme.Animations.interactiveSpring, value: configuration.isPressed)
+    }
+}

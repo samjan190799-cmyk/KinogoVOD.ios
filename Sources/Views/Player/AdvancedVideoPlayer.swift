@@ -53,7 +53,7 @@ public struct AdvancedVideoPlayer: View {
                                 toggleControls()
                             } else {
                                 // Если заблокировано, показываем только кнопку разблокировки на короткое время
-                                withAnimation(Theme.Animations.swiftTransition) {
+                                withAnimation(Theme.Animations.interactiveSpring) {
                                     showControls = true
                                 }
                                 resetControlsTimer()
@@ -364,7 +364,7 @@ public struct AdvancedVideoPlayer: View {
     }
     
     private func toggleControls() {
-        withAnimation(Theme.Animations.swiftTransition) {
+        withAnimation(Theme.Animations.interactiveSpring) {
             showControls.toggle()
         }
         if showControls {
@@ -379,7 +379,7 @@ public struct AdvancedVideoPlayer: View {
         controlsTimer = Task {
             try? await Task.sleep(nanoseconds: 3_000_000_000) // 3 секунды
             if !Task.isCancelled && isPlaying && !isDraggingSlider {
-                withAnimation(Theme.Animations.slowFade) {
+                withAnimation(Theme.Animations.smoothFade) {
                     showControls = false
                 }
             }

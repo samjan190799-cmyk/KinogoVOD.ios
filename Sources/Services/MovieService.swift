@@ -225,7 +225,7 @@ public final class MovieService: ObservableObject {
                         videoURL: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
                     )
                 ]
-            }
+            )
         ]
     }
     
