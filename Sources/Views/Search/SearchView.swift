@@ -3,7 +3,7 @@ import SwiftUI
 /// Экран поиска фильмов и сериалов Киного с детальной фильтрацией
 public struct SearchView: View {
     @StateObject private var service = MovieService()
-    @State private var query: String = ""
+    @State private var searchText: String = ""
     
     // Фильтры
     @State private var selectedGenre: String = "Все"
@@ -41,13 +41,13 @@ public struct SearchView: View {
                             Image(systemName: "magnifyingglass")
                                 .foregroundColor(Theme.Colors.textSecondary)
                             
-                            TextField("Поиск фильмов, сериалов...", text: $query)
+                            TextField("Поиск фильмов, сериалов...", text: $searchText)
                                 .foregroundColor(Theme.Colors.textPrimary)
                                 .tint(Theme.Colors.accent)
                                 .font(.system(size: 15, weight: .medium))
                             
-                            if !query.isEmpty {
-                                Button(action: { query = "" }) {
+                            if !searchText.isEmpty {
+                                Button(action: { searchText = "" }) {
                                     Image(systemName: "xmark.circle.fill")
                                         .foregroundColor(Theme.Colors.textSecondary)
                                 }
@@ -57,7 +57,7 @@ public struct SearchView: View {
                         .padding(.vertical, 12)
                         .background(Theme.Colors.surface)
                         .cornerRadius(Theme.Radius.card)
-                        .neonGlowBorder(radius: Theme.Radius.card, isGlowing: !query.isEmpty)
+                        .neonGlowBorder(radius: Theme.Radius.card, isGlowing: !searchText.isEmpty)
                         
                         // Кнопка открытия панели фильтров
                         Button(action: { showFilterSheet = true }) {
@@ -87,7 +87,7 @@ public struct SearchView: View {
                                 .font(.system(size: 54))
                                 .foregroundColor(Theme.Colors.textSecondary)
                             
-                            Text(query.isEmpty && !hasActiveFilters ? "Попробуйте найти что-то новое" : "По вашему запросу ничего не найдено")
+                            Text(searchText.isEmpty && !hasActiveFilters ? "Попробуйте найти что-то новое" : "По вашему запросу ничего не найдено")
                                 .font(.system(size: 15, weight: .semibold))
                                 .foregroundColor(Theme.Colors.textSecondary)
                         }
@@ -130,8 +130,8 @@ public struct SearchView: View {
         var baseList = service.movies
         
         // Поиск по слову
-        if !query.isEmpty {
-            baseList = service.searchMovies(query: query)
+        if !searchText.isEmpty {
+            baseList = service.searchMovies(query: searchText)
         }
         
         // Фильтр по жанру
@@ -214,7 +214,99 @@ public struct SearchView: View {
         .cornerRadius(6)
     }
     
-    // MARK: - Filter Sheet View
+    // MARK: - Filter Sheet View & Subcomponents (Разбиваем для ускорения type-check)
+    
+    @ViewBuilder
+    private func typeFilterSection() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Категория")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(.white)
+            
+            HStack(spacing: 10) {
+                ForEach(types, id: \.self) { type in
+                    Button(action: { selectedType = type }) {
+                        Text(type)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(selectedType == type ? .black : .white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(selectedType == type ? Theme.Colors.accent : Theme.Colors.surface)
+                            .cornerRadius(8)
+                    }
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func genreFilterSection() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Жанр")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(.white)
+            
+            FlowLayout(items: genresList) { genre in
+                Button(action: { selectedGenre = genre }) {
+                    Text(genre)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(selectedGenre == genre ? .black : .white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(selectedGenre == genre ? Theme.Colors.accent : Theme.Colors.surface)
+                        .cornerRadius(8)
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func yearFilterSection() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Год выпуска")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(.white)
+            
+            FlowLayout(items: ["Любой"] + yearsList.map { String($0) }) { yearStr in
+                let isSelected = (yearStr == "Любой" && selectedYear == nil) || (selectedYear == Int(yearStr))
+                Button(action: {
+                    if yearStr == "Любой" {
+                        selectedYear = nil
+                    } else {
+                        selectedYear = Int(yearStr)
+                    }
+                }) {
+                    Text(yearStr)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(isSelected ? .black : .white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(isSelected ? Theme.Colors.accent : Theme.Colors.surface)
+                        .cornerRadius(8)
+                }
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func sortFilterSection() -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Сортировка")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(.white)
+            
+            Toggle(isOn: $sortByRating) {
+                Text("По рейтингу Кинопоиска")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+            .tint(Theme.Colors.accent)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Theme.Colors.surface)
+            .cornerRadius(8)
+        }
+    }
     
     @ViewBuilder
     private func filterSheetView() -> some View {
@@ -225,90 +317,10 @@ public struct SearchView: View {
                 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        
-                        // Тип контента
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Категория")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.white)
-                            
-                            HStack(spacing: 10) {
-                                ForEach(types, id: \.self) { type in
-                                    Button(action: { selectedType = type }) {
-                                        Text(type)
-                                            .font(.system(size: 13, weight: .semibold))
-                                            .foregroundColor(selectedType == type ? .black : .white)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 10)
-                                            .background(selectedType == type ? Theme.Colors.accent : Theme.Colors.surface)
-                                            .cornerRadius(8)
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // Выбор Жанра
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Жанр")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.white)
-                            
-                            FlowLayout(items: genresList) { genre in
-                                Button(action: { selectedGenre = genre }) {
-                                    Text(genre)
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(selectedGenre == genre ? .black : .white)
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 8)
-                                        .background(selectedGenre == genre ? Theme.Colors.accent : Theme.Colors.surface)
-                                        .cornerRadius(8)
-                                }
-                            }
-                        }
-                        
-                        // Выбор Года
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Год выпуска")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.white)
-                            
-                            FlowLayout(items: ["Любой"] + yearsList.map { String($0) }) { yearStr in
-                                let isSelected = (yearStr == "Любой" && selectedYear == nil) || (selectedYear == Int(yearStr))
-                                Button(action: {
-                                    if yearStr == "Любой" {
-                                        selectedYear = nil
-                                    } else {
-                                        selectedYear = Int(yearStr)
-                                    }
-                                }) {
-                                    Text(yearStr)
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(isSelected ? .black : .white)
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 8)
-                                        .background(isSelected ? Theme.Colors.accent : Theme.Colors.surface)
-                                        .cornerRadius(8)
-                                }
-                            }
-                        }
-                        
-                        // Сортировка
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Сортировка")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.white)
-                            
-                            Toggle(isOn: $sortByRating) {
-                                Text("По рейтингу Кинопоиска")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.white)
-                            }
-                            .tint(Theme.Colors.accent)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(Theme.Colors.surface)
-                            .cornerRadius(8)
-                        }
+                        typeFilterSection()
+                        genreFilterSection()
+                        yearFilterSection()
+                        sortFilterSection()
                     }
                     .padding(20)
                 }
